@@ -11,10 +11,13 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -96,12 +99,26 @@ public class UVIndexUtils {
             e.printStackTrace();
         }
 
-
-
         return "";
     }
 
     public void getUVIndexForZip(String zipCode) {
+
+        JSONObject object;
+
+
+        try {
+            object =  downloadJSON("https://iaspub.epa.gov/enviro/efservice/getEnvirofactsUVHOURLY/ZIP/"+zipCode+"/JSON");
+
+            String date = new SimpleDateFormat("MMM/dd/yy hh aa").format(new Date());
+            JSONArray jsonArr = object.getJSONArray("UV_VALUE");
+            String[] arr =new String[jsonArr.length()];
+            for(int i =0; i < jsonArr.length();i++){
+                arr[i] = jsonArr.getString(i);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
