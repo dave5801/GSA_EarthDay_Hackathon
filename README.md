@@ -3,7 +3,7 @@ The [United States Environmental Protection Agency](https://epa.gov/) have been 
 
 The basic workflow of the widget is as follows:
 
- * determine geolocation of the device
+ * determine [geolocation of the device](http://developer.android.com/training/location/index.html)
  * check whether that geolocation is a beach (using EPA's [data on zip codes for beaches](https://developer.epa.gov/wp-content/uploads/2016/04/uv_beach_zipcode.zip), which was imported into a MySQL database)
  * if location is not a beach, determine the three nearest beaches via the [Google Maps Android API](https://developers.google.com/maps/documentation/android-api/)
  * check time and date of the device
