@@ -1,2 +1,2 @@
 # EPA UV Index Widget
-GSA Earthday Hackathon 2016
+The [United States Environmental Protection Agency](https://epa.gov/) have been providing their [UV Index](https://play.google.com/store/apps/details?id=gov.epa&hl=en) app for some years. As part of the [GSA Earthday Hackathon 2016](http://open.gsa.gov/EarthDayHackathon/), we are trying to turn this into an [Android widget tailored for beaches](https://developer.epa.gov/tailored-uv-index-forecast-for-beaches/), aimed at users who are either on a beach in the US or going to one.
