@@ -37,8 +37,8 @@ public class UVIndexUtils {
     private Double longitude = null;
     private Double latitude = null;
 
-    public interface UVIndexDownloadListener {
-        void success(int index);
+    public interface AsyncCallback {
+        void success(String message);
         void error();
     }
 
@@ -47,7 +47,26 @@ public class UVIndexUtils {
         LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
-    public void getCurrentUVIndex(UVIndexDownloadListener listener) {
+    public void getUVIndexForCurrentLocation(final AsyncCallback listener) {
+        getLocation(new AsyncCallback() {
+            @Override
+            public void success(String message) {
+                String zip = getZipFromLocation(latitude, longitude);
+                if (zip == null) {
+                    listener.error();
+                }
+                /*String index =*/ getUVIndexForZip(zip);
+                listener.success("");
+            }
+
+            @Override
+            public void error() {
+                listener.error();
+            }
+        });
+    }
+
+    private void getLocation(final AsyncCallback listener) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -56,12 +75,18 @@ public class UVIndexUtils {
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
+            listener.error();
             return;
         }
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-
+                //Make sure accuracy is good enough before return location;
+                if (location.hasAccuracy() && location.getAccuracy() < 100f) {
+                    latitude = location.getLatitude();
+                    longitude = location.getLongitude();
+                    listener.success("");
+                }
             }
 
             @Override
@@ -89,32 +114,36 @@ public class UVIndexUtils {
 
         try {
             addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
-            String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
-            String city = addresses.get(0).getLocality();
-            String state = addresses.get(0).getAdminArea();
-            String country = addresses.get(0).getCountryName();
-            String postalCode = addresses.get(0).getPostalCode();
-            String knownName = addresses.get(0).getFeatureName(); // Only if available else return NULL
+
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
 
-        return "";
+        /*
+         String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
+         String city = addresses.get(0).getLocality();
+         String state = addresses.get(0).getAdminArea();
+         String country = addresses.get(0).getCountryName();
+         String postalCode = addresses.get(0).getPostalCode();
+         String knownName = addresses.get(0).getFeatureName(); // Only if available else return NULL
+         */
+
+        return addresses.get(0).getPostalCode();
     }
 
     public void getUVIndexForZip(String zipCode) {
 
-        JSONObject object;
-
+        JSONArray jsonArray;
 
         try {
-            object =  downloadJSON("https://iaspub.epa.gov/enviro/efservice/getEnvirofactsUVHOURLY/ZIP/"+zipCode+"/JSON");
+            String jsonString = getURL("https://iaspub.epa.gov/enviro/efservice/getEnvirofactsUVHOURLY/ZIP/"+zipCode+"/JSON");
+            jsonArray = new JSONArray(jsonString);
 
             String date = new SimpleDateFormat("MMM/dd/yy hh aa").format(new Date());
-            JSONArray jsonArr = object.getJSONArray("UV_VALUE");
-            String[] arr =new String[jsonArr.length()];
-            for(int i =0; i < jsonArr.length();i++){
-                arr[i] = jsonArr.getString(i);
+            String[] arr =new String[jsonArray.length()];
+            for(int i =0; i < jsonArray.length();i++){
+                arr[i] = jsonArray.getString(i);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -122,13 +151,13 @@ public class UVIndexUtils {
 
     }
 
-    private JSONObject downloadJSON(String url) throws IOException, JSONException {
+    private String getURL(String url) throws IOException, JSONException {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
 
         Response response = client.newCall(request).execute();
-        return new JSONObject(response.body().string());
+        return response.body().string();
     }
 
 }
