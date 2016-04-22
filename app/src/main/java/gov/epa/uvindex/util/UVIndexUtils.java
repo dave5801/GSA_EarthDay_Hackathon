@@ -10,6 +10,8 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,6 +23,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -30,7 +34,6 @@ import okhttp3.Response;
  */
 public class UVIndexUtils {
 
-    OkHttpClient client = new OkHttpClient();
     LocationManager locationManager;
     Context context;
 
@@ -44,24 +47,85 @@ public class UVIndexUtils {
 
     public UVIndexUtils(Context context) {
         this.context = context;
-        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        this.locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
-    public void getUVIndexForCurrentLocation(final AsyncCallback listener) {
+    public void getCurrentZip(final AsyncCallback callback) {
         getLocation(new AsyncCallback() {
             @Override
             public void success(String message) {
                 String zip = getZipFromLocation(latitude, longitude);
                 if (zip == null) {
-                    listener.error();
+                    callback.error();
+                    return;
                 }
-                /*String index =*/ getUVIndexForZip(zip);
-                listener.success("");
+                callback.success(zip);
             }
 
             @Override
             public void error() {
-                listener.error();
+                callback.error();
+            }
+        });
+    }
+
+    public void zipIsNearBeach(String zip, final AsyncCallback callback) {
+        getURL("http://dev‐central.byethost18.com/uv‐index/select.php?zip=" + zip, new AsyncCallback() {
+            @Override
+            public void success(String message) {
+                if (message.equals("null")) {
+                    callback.success("false");
+                }
+                try {
+                    JSONObject object = new JSONObject(message);
+                    JSONArray array = object.getJSONArray("data");
+                    callback.success(array.getJSONObject(0).toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    callback.success("false");
+                }
+            }
+
+            @Override
+            public void error() {
+                callback.error();
+            }
+        });
+    }
+
+    public void getUVIndexForCurrentLocation(final AsyncCallback callback) {
+        Log.i("TAG", "Getting location...");
+        getLocation(new AsyncCallback() {
+            @Override
+            public void success(String message) {
+                Log.i("TAG", "Getting zip...");
+                String zip = getZipFromLocation(latitude, longitude);
+                if (zip == null) {
+                    Log.i("TAG", "ZIPCODE ERROR");
+                    callback.error();
+                }
+                Log.i("TAG", "Getting index...");
+                getUVIndexForZip(zip, callback);
+
+            }
+
+            @Override
+            public void error() {
+                callback.error();
+            }
+        });
+    }
+
+    public void getUVIndexForZip(final String zipCode, final AsyncCallback callback) {
+        getURL("https://iaspub.epa.gov/enviro/efservice/getEnvirofactsUVHOURLY/ZIP/" + zipCode + "/JSON", new AsyncCallback() {
+            @Override
+            public void success(String message) {
+                callback.success(getCurrentUVIndexFromJSON(zipCode, message));
+            }
+
+            @Override
+            public void error() {
+                callback.error();
             }
         });
     }
@@ -75,17 +139,19 @@ public class UVIndexUtils {
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
+            Toast.makeText(context, "UV Index needs location permissions", Toast.LENGTH_LONG).show();
             listener.error();
             return;
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, new LocationListener() {
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
                 //Make sure accuracy is good enough before return location;
-                if (location.hasAccuracy() && location.getAccuracy() < 100f) {
+                if (location.hasAccuracy() && location.getAccuracy() < 100000f) {
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
                     listener.success("");
+                    locationManager.removeUpdates(this);
                 }
             }
 
@@ -132,40 +198,35 @@ public class UVIndexUtils {
         return addresses.get(0).getPostalCode();
     }
 
-    public String getUVIndexForZip(String zipCode) {
+    public String getCurrentUVIndexFromJSON(String zipCode, String jsonString) {
+
+        final String dateFormat = "MMM/dd/yyyy hh aa";
 
         JSONArray jsonArray;
 
-        String uv_index;
-
         try {
-            String jsonString = getURL("https://iaspub.epa.gov/enviro/efservice/getEnvirofactsUVHOURLY/ZIP/"+zipCode+"/JSON");
             jsonArray = new JSONArray(jsonString);
 
-            String date = new SimpleDateFormat("MMM/dd/yy hh aa").format(new Date());
+            String date = new SimpleDateFormat(dateFormat).format(new Date());
 
             for(int i =0; i < jsonArray.length();i++){
                 //arr[i] = jsonArray.getString(i);
                 JSONObject obj = jsonArray.getJSONObject(i);
 
-                if(obj.getString("DATE_TIME")== date){
+                if(obj.getString("DATE_TIME").equalsIgnoreCase(date)){
                     return jsonArray.getJSONObject(i).getString("UV_VALUE");
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return "Date not found";
 
     }
 
-    private String getURL(String url) throws IOException, JSONException {
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
-
-        Response response = client.newCall(request).execute();
-        return response.body().string();
+    private void getURL(String url, AsyncCallback callback) {
+        HTTPGetTask task = new HTTPGetTask(callback);
+        task.execute(url);
     }
 
 }
