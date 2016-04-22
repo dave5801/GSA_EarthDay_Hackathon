@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/UVIndex.iml" filepath="$PROJECT_DIR$/UVIndex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/GSA_EarthDay_Hackathon.iml" filepath="$PROJECT_DIR$/GSA_EarthDay_Hackathon.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
