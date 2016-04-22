@@ -31,6 +31,7 @@ public class NewAppWidget extends AppWidgetProvider {
                     @Override
                     public void success(final String message) {
                         Log.i("TAG", "RESPONSE: " +  message);
+                        final String beach = message;
                         if (message == null || message.equals("false") || message.equals("")) {
                             views.setTextViewText(R.id.appwidget_text, "Not near beach");
                             appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -40,7 +41,7 @@ public class NewAppWidget extends AppWidgetProvider {
                         utils.getUVIndexForZip(zip, new UVIndexUtils.AsyncCallback() {
                             @Override
                             public void success(String message) {
-                                views.setTextViewText(R.id.appwidget_text, "UV Index: " + message);
+                                views.setTextViewText(R.id.appwidget_text, beach + ": " + message);
                                 appWidgetManager.updateAppWidget(appWidgetId, views);
                             }
 

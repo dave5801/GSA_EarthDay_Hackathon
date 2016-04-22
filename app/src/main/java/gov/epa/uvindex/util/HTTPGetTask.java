@@ -24,6 +24,7 @@ public class HTTPGetTask extends AsyncTask<String, Void, String> {
     protected String doInBackground(String... strings) {
         final String url = strings[0];
         Request request = new Request.Builder()
+                .header("Cookie", "referrer=; __test=f1e424bb9fb80c4266caa27d63c9ed2a")
                 .url(url)
                 .build();
         try {

@@ -70,16 +70,17 @@ public class UVIndexUtils {
     }
 
     public void zipIsNearBeach(String zip, final AsyncCallback callback) {
-        getURL("http://dev‐central.byethost18.com/uv‐index/select.php?zip=" + zip, new AsyncCallback() {
+        getURL("http://hqd.us/uv-index/select.php?zip=" + zip, new AsyncCallback() {
             @Override
             public void success(String message) {
                 if (message.equals("null")) {
                     callback.success("false");
                 }
                 try {
+                    Log.i("Tag", message);
                     JSONObject object = new JSONObject(message);
                     JSONArray array = object.getJSONArray("data");
-                    callback.success(array.getJSONObject(0).toString());
+                    callback.success(array.getJSONObject(0).getString("beach"));
                 } catch (Exception e) {
                     e.printStackTrace();
                     callback.success("false");
@@ -143,7 +144,7 @@ public class UVIndexUtils {
             listener.error();
             return;
         }
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, new LocationListener() {
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, new LocationListener() { //TODO: Use GPS_PROVIDER for better accuracy
             @Override
             public void onLocationChanged(Location location) {
                 //Make sure accuracy is good enough before return location;
