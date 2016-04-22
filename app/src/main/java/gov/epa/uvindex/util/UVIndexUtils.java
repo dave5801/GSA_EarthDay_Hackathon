@@ -132,22 +132,30 @@ public class UVIndexUtils {
         return addresses.get(0).getPostalCode();
     }
 
-    public void getUVIndexForZip(String zipCode) {
+    public String getUVIndexForZip(String zipCode) {
 
         JSONArray jsonArray;
+
+        String uv_index;
 
         try {
             String jsonString = getURL("https://iaspub.epa.gov/enviro/efservice/getEnvirofactsUVHOURLY/ZIP/"+zipCode+"/JSON");
             jsonArray = new JSONArray(jsonString);
 
             String date = new SimpleDateFormat("MMM/dd/yy hh aa").format(new Date());
-            String[] arr =new String[jsonArray.length()];
+
             for(int i =0; i < jsonArray.length();i++){
-                arr[i] = jsonArray.getString(i);
+                //arr[i] = jsonArray.getString(i);
+                JSONObject obj = jsonArray.getJSONObject(i);
+
+                if(obj.getString("DATE_TIME")== date){
+                    return jsonArray.getJSONObject(i).getString("UV_VALUE");
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return null;
 
     }
 
